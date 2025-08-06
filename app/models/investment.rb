@@ -28,5 +28,6 @@ class Investment < ApplicationRecord
   # Helper method to set data for a specific step
   def set_step_data(step_id, data)
     self.user_data = user_data.merge(step_id.to_s => data)
+    save!
   end
 end

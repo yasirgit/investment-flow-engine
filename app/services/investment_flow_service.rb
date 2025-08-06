@@ -161,7 +161,7 @@ class InvestmentFlowService
   def step_completed?(step)
     # First check Redis for cached completion status
     redis_progress = @redis_service.get_step_progress(@investment.id)
-    if redis_progress[step.order.to_s]
+    if redis_progress[step.order.to_s] == true
       return true
     end
     
