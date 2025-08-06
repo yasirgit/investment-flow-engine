@@ -1,8 +1,8 @@
 class InvestmentsController < ApplicationController
-  before_action :set_platform, only: [:new, :create, :show, :update]
-  before_action :set_investment, only: [:show, :update]
-  before_action :set_flow_service, only: [:show, :update]
-  before_action :set_current_step, only: [:show, :update]
+  before_action :set_platform, only: [ :new, :create, :show, :update ]
+  before_action :set_investment, only: [ :show, :update ]
+  before_action :set_flow_service, only: [ :show, :update ]
+  before_action :set_current_step, only: [ :show, :update ]
 
   def index
     @platforms = Platform.active
@@ -26,15 +26,15 @@ class InvestmentsController < ApplicationController
     Rails.logger.info "Step params: #{step_params.inspect}"
     Rails.logger.info "Current step component type: #{@current_step.component_type}"
     Rails.logger.info "Current step order: #{@current_step.order}"
-    
+
     if @flow_service.validate_step_data(@current_step, step_params)
       Rails.logger.info "Validation PASSED"
       @flow_service.save_step_data(@current_step, step_params)
-      
+
       if @flow_service.last_step?(@current_step)
         # This is the final step, submit the investment
         @flow_service.submit_investment
-        redirect_to investment_path(@investment), notice: 'Investment submitted successfully!'
+        redirect_to investment_path(@investment), notice: "Investment submitted successfully!"
       else
         # Move to next step
         next_step = @flow_service.next_step(@current_step)
@@ -52,7 +52,7 @@ class InvestmentsController < ApplicationController
   def create
     @investment = Investment.new(investment_params)
     @investment.status = :draft
-    
+
     if @investment.save
       redirect_to investment_path(@investment)
     else
@@ -98,4 +98,4 @@ class InvestmentsController < ApplicationController
       text: params[:text]
     }.compact
   end
-end 
+end

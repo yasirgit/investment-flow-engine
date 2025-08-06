@@ -5,7 +5,7 @@ class InvestmentFlowService
     @investment = investment
     @platform = investment.platform
     @redis_service = RedisStateService.new
-    
+
     # Sync Redis progress with database data
     sync_progress_with_database
   end
@@ -15,18 +15,18 @@ class InvestmentFlowService
     @platform.steps_ordered.each do |step|
       step_data = @investment.step_data(step.id)
       completed = case step.component_type
-      when 'amount_input'
-        step_data['value'].present?
-      when 'checkbox'
-        step_data['checked'] == '1' || step_data['checked'] == 'true'
-      when 'text_input'
-        step_data['text'].present?
-      when 'disclaimer'
-        step_data['checked'] == '1' || step_data['checked'] == 'true'
+      when "amount_input"
+        step_data["value"].present?
+      when "checkbox"
+        step_data["checked"] == "1" || step_data["checked"] == "true"
+      when "text_input"
+        step_data["text"].present?
+      when "disclaimer"
+        step_data["checked"] == "1" || step_data["checked"] == "true"
       else
         false
       end
-      
+
       @redis_service.track_step_progress(@investment.id, step.order, completed: completed)
     end
   end
@@ -66,7 +66,7 @@ class InvestmentFlowService
   # Calculate progress percentage
   def progress_percentage(step)
     return 0 if @platform.steps_ordered.count == 0
-    
+
     total_steps = @platform.steps_ordered.count
     current_position = step.order
     ((current_position.to_f / total_steps) * 100).round
@@ -77,39 +77,39 @@ class InvestmentFlowService
     Rails.logger.info "=== VALIDATION DEBUG ==="
     Rails.logger.info "Step component type: #{step.component_type}"
     Rails.logger.info "Step params: #{step_params}"
-    
+
     result = case step.component_type
-    when 'amount_input'
+    when "amount_input"
       validate_amount_input(step, step_params)
-    when 'checkbox'
+    when "checkbox"
       validate_checkbox(step, step_params)
-    when 'text_input'
+    when "text_input"
       validate_text_input(step, step_params)
-    when 'disclaimer'
+    when "disclaimer"
       validate_disclaimer(step, step_params)
     else
       false
     end
-    
+
     Rails.logger.info "Validation PASSED" if result
     Rails.logger.info "Validation FAILED" unless result
-    
+
     # Track analytics in Redis
     @redis_service.increment_step_completion(@platform.id, step.component_type) if result
-    
+
     result
   end
 
   # Get validation error message
   def validation_error_message(step, step_params)
     case step.component_type
-    when 'amount_input'
+    when "amount_input"
       amount_validation_error_message(step, step_params)
-    when 'checkbox'
+    when "checkbox"
       checkbox_validation_error_message(step)
-    when 'text_input'
+    when "text_input"
       text_input_validation_error_message(step)
-    when 'disclaimer'
+    when "disclaimer"
       disclaimer_validation_error_message(step)
     else
       "Invalid step type"
@@ -120,17 +120,17 @@ class InvestmentFlowService
   def save_step_data(step, step_params)
     # Save to database
     @investment.set_step_data(step.id, step_params)
-    
+
     # Cache in Redis for faster access
     @redis_service.save_investment_session(
-      session_id, 
-      @investment.id, 
+      session_id,
+      @investment.id,
       { step_id: step.id, data: step_params, timestamp: Time.current }
     )
-    
+
     # Track progress in Redis - mark as completed
     @redis_service.track_step_progress(@investment.id, step.order, completed: true)
-    
+
     # Invalidate step cache to ensure fresh data
     Rails.cache.delete("platform:#{@platform.id}:all_steps")
   end
@@ -138,7 +138,7 @@ class InvestmentFlowService
   # Submit investment
   def submit_investment
     @investment.update!(status: :submitted)
-    
+
     # Clear Redis session data after submission
     @redis_service.clear_investment_session(session_id, @investment.id)
   end
@@ -164,18 +164,18 @@ class InvestmentFlowService
     if redis_progress[step.order.to_s] == true
       return true
     end
-    
+
     # Fallback to database check
     step_data = @investment.step_data(step.id)
     case step.component_type
-    when 'amount_input'
-      step_data['value'].present?
-    when 'checkbox'
-      step_data['checked'] == '1' || step_data['checked'] == 'true'
-    when 'text_input'
-      step_data['text'].present?
-    when 'disclaimer'
-      step_data['checked'] == '1' || step_data['checked'] == 'true'
+    when "amount_input"
+      step_data["value"].present?
+    when "checkbox"
+      step_data["checked"] == "1" || step_data["checked"] == "true"
+    when "text_input"
+      step_data["text"].present?
+    when "disclaimer"
+      step_data["checked"] == "1" || step_data["checked"] == "true"
     else
       false
     end
@@ -189,7 +189,7 @@ class InvestmentFlowService
   # Check if all previous steps are completed
   def previous_steps_completed?(current_step)
     return true if first_step?(current_step)
-    
+
     previous_steps = @platform.steps_ordered.where('"order" < ?', current_step.order)
     previous_steps.all? { |step| step_completed?(step) }
   end
@@ -213,9 +213,9 @@ class InvestmentFlowService
 
   def validate_amount_input(step, step_params)
     amount = step_params[:value].to_f
-    min = step.config['min'].to_f
-    max = step.config['max'].to_f
-    
+    min = step.config["min"].to_f
+    max = step.config["max"].to_f
+
     amount >= min && amount <= max
   end
 
@@ -223,7 +223,7 @@ class InvestmentFlowService
     # Checkbox sends "1" when checked, nil when unchecked
     checked_value = step_params[:checked]
     Rails.logger.info "Checkbox validation - checked value: '#{checked_value}' (class: #{checked_value.class})"
-    result = checked_value == '1' || checked_value == 'on' || checked_value == 'true'
+    result = checked_value == "1" || checked_value == "on" || checked_value == "true"
     Rails.logger.info "Checkbox validation result: #{result}"
     result
   end
@@ -236,16 +236,16 @@ class InvestmentFlowService
     # Checkbox sends "1" when checked, nil when unchecked
     checked_value = step_params[:checked]
     Rails.logger.info "Disclaimer validation - checked value: '#{checked_value}' (class: #{checked_value.class})"
-    result = checked_value == '1' || checked_value == 'on' || checked_value == 'true'
+    result = checked_value == "1" || checked_value == "on" || checked_value == "true"
     Rails.logger.info "Disclaimer validation result: #{result}"
     result
   end
 
   def amount_validation_error_message(step, step_params)
     amount = step_params[:value].to_f
-    min = step.config['min'].to_f
-    max = step.config['max'].to_f
-    
+    min = step.config["min"].to_f
+    max = step.config["max"].to_f
+
     if amount < min
       "Amount must be at least $#{min}"
     elsif amount > max
@@ -266,4 +266,4 @@ class InvestmentFlowService
   def disclaimer_validation_error_message(step)
     "You must acknowledge the risks to continue"
   end
-end 
+end

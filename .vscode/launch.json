@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Rails Server",
+      "type": "rdbg",
+      "request": "launch",
+      "script": "bin/rails server",
+      "args": [],
+      "askParameters": false,
+      "useBundler": true,
+      "env": {
+        "RAILS_ENV": "development"
+      },
+      "cwd": "${workspaceRoot}"
+    },
+    {
+      "name": "Rails Console",
+      "type": "rdbg",
+      "request": "launch",
+      "script": "bin/rails console",
+      "args": [],
+      "askParameters": false,
+      "useBundler": true,
+      "env": {
+        "RAILS_ENV": "development"
+      },
+      "cwd": "${workspaceRoot}"
+    },
+    {
+      "name": "Rails Test",
+      "type": "rdbg",
+      "request": "launch",
+      "script": "bin/rails test",
+      "args": [],
+      "askParameters": false,
+      "useBundler": true,
+      "env": {
+        "RAILS_ENV": "test"
+      },
+      "cwd": "${workspaceRoot}"
+    },
+    {
+      "name": "Attach to Rails Server",
+      "type": "rdbg",
+      "request": "attach",
+      "port": 12721,
+      "host": "127.0.0.1"
+    }
+  ]
+} 
