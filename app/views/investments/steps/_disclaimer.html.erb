@@ -1,0 +1,82 @@
+<%= form_with url: investment_path(@investment, step: step.order), 
+              method: :patch, 
+              data: { turbo_frame: "step_content", controller: "disclaimer_step" } do |form| %>
+  
+  <div class="mb-6">
+    <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-yellow-800">Important Notice</h3>
+          <div class="mt-2 text-sm text-yellow-700">
+            <p><%= step.config["text"] %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <div class="flex items-center h-5">
+        <%= form.check_box :checked, 
+            checked: flow_service.step_data(step)["checked"] == "1" || flow_service.step_data(step)["checked"] == "true",
+            class: "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500",
+            data: { 
+              "disclaimer_step-target": "checkbox",
+              action: "change->disclaimer_step#toggle"
+            },
+            onclick: "toggleDisclaimerValidation(this)" %>
+      </div>
+      <div class="ml-3 text-sm">
+        <label class="font-medium text-gray-700">
+          I understand and accept the risks associated with this investment
+        </label>
+      </div>
+    </div>
+    
+    <div class="mt-2 text-sm text-red-600" data-disclaimer_step-target="error" id="disclaimer-error">
+      You must acknowledge the risks to continue
+    </div>
+  </div>
+
+  <%= form.hidden_field :step_data, value: "disclaimer" %>
+  
+  <div class="flex justify-between">
+    <% unless flow_service.first_step?(step) %>
+      <%= link_to "Back", investment_path(@investment, step: step.order - 1), 
+          class: "px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50" %>
+    <% else %>
+      <div></div>
+    <% end %>
+    
+    <%= form.submit flow_service.last_step?(step) ? "Submit Investment" : "Continue", 
+        class: "px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        data: { "disclaimer_step-target": "submit" },
+        id: "disclaimer-submit" %>
+  </div>
+<% end %>
+
+<script>
+function toggleDisclaimerValidation(checkbox) {
+  console.log("Vanilla JS disclaimer validation triggered");
+  console.log("Checkbox checked:", checkbox.checked);
+  
+  const errorElement = document.getElementById('disclaimer-error');
+  const submitButton = document.getElementById('disclaimer-submit');
+  
+  if (checkbox.checked) {
+    console.log("Hiding error and enabling submit");
+    errorElement.style.display = "none";
+    submitButton.disabled = false;
+    submitButton.classList.remove("opacity-50", "cursor-not-allowed");
+  } else {
+    console.log("Showing error and disabling submit");
+    errorElement.style.display = "block";
+    submitButton.disabled = true;
+    submitButton.classList.add("opacity-50", "cursor-not-allowed");
+  }
+}
+</script> 

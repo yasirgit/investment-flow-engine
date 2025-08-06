@@ -1,0 +1,66 @@
+<%= form_with url: investment_path(@investment, step: step.order), 
+              method: :patch, 
+              data: { turbo_frame: "step_content", controller: "checkbox_step" } do |form| %>
+  
+  <div class="mb-6">
+    <div class="flex items-start">
+      <div class="flex items-center h-5">
+        <%= form.check_box :checked, 
+            checked: flow_service.step_data(step)["checked"] == "1" || flow_service.step_data(step)["checked"] == "true",
+            class: "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500",
+            data: { 
+              "checkbox_step-target": "checkbox",
+              action: "change->checkbox_step#toggle"
+            },
+            onclick: "toggleCheckboxValidation(this)" %>
+      </div>
+      <div class="ml-3 text-sm">
+        <label class="font-medium text-gray-700">
+          <%= step.config["label"] %>
+        </label>
+      </div>
+    </div>
+    
+    <div class="mt-2 text-sm text-red-600" data-checkbox_step-target="error" id="checkbox-error">
+      You must accept the terms to continue
+    </div>
+  </div>
+
+  <%= form.hidden_field :step_data, value: "checkbox" %>
+  
+  <div class="flex justify-between">
+    <% unless flow_service.first_step?(step) %>
+      <%= link_to "Back", investment_path(@investment, step: step.order - 1), 
+          class: "px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50" %>
+    <% else %>
+      <div></div>
+    <% end %>
+    
+    <%= form.submit flow_service.last_step?(step) ? "Submit Investment" : "Continue", 
+        class: "px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        data: { "checkbox_step-target": "submit" },
+        id: "checkbox-submit" %>
+  </div>
+<% end %>
+
+<script>
+function toggleCheckboxValidation(checkbox) {
+  console.log("Vanilla JS checkbox validation triggered");
+  console.log("Checkbox checked:", checkbox.checked);
+  
+  const errorElement = document.getElementById('checkbox-error');
+  const submitButton = document.getElementById('checkbox-submit');
+  
+  if (checkbox.checked) {
+    console.log("Hiding error and enabling submit");
+    errorElement.style.display = "none";
+    submitButton.disabled = false;
+    submitButton.classList.remove("opacity-50", "cursor-not-allowed");
+  } else {
+    console.log("Showing error and disabling submit");
+    errorElement.style.display = "block";
+    submitButton.disabled = true;
+    submitButton.classList.add("opacity-50", "cursor-not-allowed");
+  }
+}
+</script> 

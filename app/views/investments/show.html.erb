@@ -1,0 +1,101 @@
+<% if @investment.submitted? %>
+  <!-- Success State -->
+  <%= turbo_frame_tag "step_content" do %>
+    <div class="container mx-auto px-4 py-8">
+      <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-8 border border-gray-200 text-center">
+          <div class="mb-6">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Investment Submitted Successfully!</h1>
+            <p class="text-gray-600">Your investment has been submitted and is being processed.</p>
+          </div>
+          
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Investment Details:</h3>
+            <div class="text-sm text-gray-600 space-y-1">
+              <div><strong>Platform:</strong> <%= @platform.name %></div>
+              <div><strong>Status:</strong> <span class="text-green-600 font-medium">Submitted</span></div>
+              <div><strong>Investment ID:</strong> #<%= @investment.id %></div>
+            </div>
+          </div>
+          
+          <%= link_to "Start New Investment", root_path, 
+              class: "inline-block bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors",
+              data: { turbo_frame: "_top" } %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <!-- Investment Flow -->
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <!-- Current Step Content -->
+      <%= turbo_frame_tag "step_content" do %>
+        <!-- Progress Bar -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-2">
+            <h1 class="text-2xl font-bold text-gray-900"><%= @platform.name %></h1>
+            <span class="text-sm text-gray-600">
+              Step <%= @current_step.order %> of <%= @flow_service.all_steps.count %>
+            </span>
+          </div>
+          
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                 style="width: <%= @flow_service.progress_percentage(@current_step) %>%"></div>
+          </div>
+        </div>
+
+        <!-- Step Navigation -->
+        <div class="mb-6">
+          <div class="flex space-x-2 overflow-x-auto pb-2">
+            <% @flow_service.all_steps.each_with_index do |step, index| %>
+              <div class="flex-shrink-0">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                              <%= step == @current_step ? 'bg-blue-600 text-white' : 
+                                  @flow_service.step_completed?(step) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600' %>">
+                    <%= step.order %>
+                  </div>
+                  <% if index < @flow_service.all_steps.count - 1 %>
+                    <div class="w-8 h-1 bg-gray-200 mx-1"></div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Validation Error (only show for non-checkbox steps) -->
+        <% if @validation_error && @current_step.component_type != 'checkbox' && @current_step.component_type != 'disclaimer' %>
+          <div class="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-red-700"><%= @validation_error %></p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <h2 class="text-xl font-semibold text-gray-900 mb-6"><%= @current_step.title %></h2>
+          
+          <%= render "investments/steps/#{@current_step.component_type}", 
+              step: @current_step, 
+              investment: @investment,
+              flow_service: @flow_service %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %> 

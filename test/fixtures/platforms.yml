@@ -1,11 +1,11 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  name: MyString
-  slug: MyString
-  active: false
+  name: "Test Platform"
+  slug: "test-platform"
+  active: true
 
 two:
-  name: MyString
-  slug: MyString
-  active: false
+  name: "Another Platform"
+  slug: "another-platform"
+  active: true

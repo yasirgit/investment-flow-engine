@@ -2,12 +2,14 @@
 
 one:
   platform: one
-  title: MyString
-  component_type: 1
+  title: "Investment Amount"
+  component_type: "amount_input"
+  config: { "min": 100, "max": 5000 }
   order: 1
 
 two:
-  platform: two
-  title: MyString
-  component_type: 1
-  order: 1
+  platform: one
+  title: "Accept Terms"
+  component_type: "checkbox"
+  config: { "label": "I accept the terms and conditions." }
+  order: 2

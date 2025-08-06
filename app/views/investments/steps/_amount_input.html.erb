@@ -1,0 +1,47 @@
+<%= form_with url: investment_path(@investment, step: step.order), 
+              method: :patch, 
+              data: { turbo_frame: "step_content", controller: "amount-input" } do |form| %>
+  
+  <div class="mb-6">
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+      Investment Amount
+    </label>
+    
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+      <%= form.number_field :value, 
+          value: flow_service.step_data(step)["value"],
+          min: step.config["min"],
+          max: step.config["max"],
+          step: "0.01",
+          class: "w-full pl-8 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+          data: { 
+            "amount-input-target": "input",
+            action: "input->amount-input#validate"
+          } %>
+    </div>
+    
+    <div class="mt-2 text-sm text-gray-600">
+      Min: $<%= step.config["min"] %> | Max: $<%= step.config["max"] %>
+    </div>
+    
+    <div class="mt-2 text-sm text-red-600 hidden" data-amount-input-target="error">
+      Please enter a valid amount between $<%= step.config["min"] %> and $<%= step.config["max"] %>
+    </div>
+  </div>
+
+  <%= form.hidden_field :step_data, value: "amount_input" %>
+  
+  <div class="flex justify-between">
+    <% unless flow_service.first_step?(step) %>
+      <%= link_to "Back", investment_path(@investment, step: step.order - 1), 
+          class: "px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50" %>
+    <% else %>
+      <div></div>
+    <% end %>
+    
+    <%= form.submit flow_service.last_step?(step) ? "Submit Investment" : "Continue", 
+        class: "px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        data: { "amount-input-target": "submit" } %>
+  </div>
+<% end %> 

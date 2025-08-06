@@ -9,6 +9,14 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # Investment flow routes
+  resources :investments, only: [:index, :new, :create, :show, :update]
+  
+  # Platform-specific investment routes
+  resources :platforms, only: [:index] do
+    resources :investments, only: [:new, :create], controller: 'investments'
+  end
+
   # Defines the root path route ("/")
-  # root "posts#index"
+  root "investments#index"
 end

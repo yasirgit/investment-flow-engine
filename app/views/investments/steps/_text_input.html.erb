@@ -1,0 +1,38 @@
+<%= form_with url: investment_path(@investment, step: step.order), 
+              method: :patch, 
+              data: { turbo_frame: "step_content", controller: "text-input" } do |form| %>
+  
+  <div class="mb-6">
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+      <%= step.config["label"] %>
+    </label>
+    
+    <%= form.text_field :text, 
+        value: flow_service.step_data(step)["text"],
+        placeholder: step.config["placeholder"],
+        class: "w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+        data: { 
+          "text-input-target": "input",
+          action: "input->text-input#validate"
+        } %>
+    
+    <div class="mt-2 text-sm text-red-600 hidden" data-text-input-target="error">
+      This field is required
+    </div>
+  </div>
+
+  <%= form.hidden_field :step_data, value: "text_input" %>
+  
+  <div class="flex justify-between">
+    <% unless flow_service.first_step?(step) %>
+      <%= link_to "Back", investment_path(@investment, step: step.order - 1), 
+          class: "px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50" %>
+    <% else %>
+      <div></div>
+    <% end %>
+    
+    <%= form.submit flow_service.last_step?(step) ? "Submit Investment" : "Continue", 
+        class: "px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        data: { "text-input-target": "submit" } %>
+  </div>
+<% end %> 
