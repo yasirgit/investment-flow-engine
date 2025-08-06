@@ -254,7 +254,75 @@ The implementation successfully demonstrates:
 - **Stimulus.js**
 - **Tailwind CSS**
 - **SQLite3** (development)
+- **Redis** (state storage and caching)
 - **Minitest** (testing)
+
+## 🔄 Redis State Storage
+
+The application now includes Redis for enhanced state management and performance:
+
+### **Redis Features Implemented:**
+
+#### **1. Platform Configuration Caching**
+- Cache platform steps and configurations
+- Automatic cache invalidation on updates
+- 1-hour cache expiration for optimal performance
+
+#### **2. Session-Based State Management**
+- Investment session data stored in Redis
+- 24-hour session expiration
+- Real-time progress tracking
+
+#### **3. Analytics and Monitoring**
+- Step completion analytics
+- Platform usage statistics
+- Real-time performance metrics
+
+#### **4. Health Monitoring**
+- Redis connection health checks
+- Memory usage monitoring
+- Cache key statistics
+
+### **Redis Service Architecture:**
+
+```ruby
+class RedisStateService
+  # Platform caching
+  def cache_platform_steps(platform_id, steps_data)
+  def get_cached_platform_steps(platform_id)
+  
+  # Session management
+  def save_investment_session(session_id, investment_id, step_data)
+  def get_investment_session(session_id, investment_id)
+  
+  # Progress tracking
+  def track_step_progress(investment_id, step_order, completed: true)
+  def get_step_progress(investment_id)
+  
+  # Analytics
+  def increment_step_completion(platform_id, step_type)
+  def get_step_completion_stats(date = Date.current)
+  
+  # Health monitoring
+  def health_check
+end
+```
+
+### **Health Check Endpoints:**
+- `GET /health` - Application and Redis health status
+- `GET /health/redis` - Detailed Redis statistics
+
+### **Redis Configuration:**
+- **URL**: Configurable via `REDIS_URL` environment variable
+- **Default**: `redis://localhost:6379/0`
+- **Fallback**: Application continues without Redis if connection fails
+- **Error Handling**: Graceful degradation with logging
+
+### **Performance Benefits:**
+- **Faster Platform Loading**: Cached configurations
+- **Reduced Database Load**: Session data in Redis
+- **Real-time Analytics**: Step completion tracking
+- **Scalable Architecture**: Horizontal scaling support
 
 ## 📄 License
 

@@ -16,7 +16,7 @@ class InvestmentsController < ApplicationController
   end
 
   def show
-    # Show is handled by the before_action callbacks
+    @current_step = @flow_service.current_step(params[:step])
   end
 
   # Implement update action to validate and advance steps using the service.

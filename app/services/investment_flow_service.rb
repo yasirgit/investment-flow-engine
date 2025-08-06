@@ -4,71 +4,103 @@ class InvestmentFlowService
   def initialize(investment)
     @investment = investment
     @platform = investment.platform
-    @current_step = nil
+    @redis_service = RedisStateService.new
+    
+    # Sync Redis progress with database data
+    sync_progress_with_database
   end
 
-  # Get the current step based on step order parameter
+  # Sync Redis progress with database data
+  def sync_progress_with_database
+    @platform.steps_ordered.each do |step|
+      step_data = @investment.step_data(step.id)
+      completed = case step.component_type
+      when 'amount_input'
+        step_data['value'].present?
+      when 'checkbox'
+        step_data['checked'] == '1' || step_data['checked'] == 'true'
+      when 'text_input'
+        step_data['text'].present?
+      when 'disclaimer'
+        step_data['checked'] == '1' || step_data['checked'] == 'true'
+      else
+        false
+      end
+      
+      @redis_service.track_step_progress(@investment.id, step.order, completed: completed)
+    end
+  end
+
+  # Get current step by order
   def current_step(step_order = nil)
     step_order ||= 1
-    @current_step = platform.steps_ordered.find_by(order: step_order) || platform.steps_ordered.first
+    Rails.cache.fetch("platform:#{@platform.id}:step:#{step_order}", expires_in: 1.hour) do
+      @platform.steps_ordered.find_by(order: step_order)
+    end
   end
 
-  # Get the next step in the flow
+  # Get next step
   def next_step(current_step)
-    platform.steps_ordered.where('"order" > ?', current_step.order).first
+    Rails.cache.fetch("platform:#{@platform.id}:next_step:#{current_step.order}", expires_in: 1.hour) do
+      @platform.steps_ordered.where('"order" > ?', current_step.order).first
+    end
   end
 
-  # Get the previous step in the flow
+  # Get previous step
   def previous_step(current_step)
-    platform.steps_ordered.where('"order" < ?', current_step.order).last
+    Rails.cache.fetch("platform:#{@platform.id}:prev_step:#{current_step.order}", expires_in: 1.hour) do
+      @platform.steps_ordered.where('"order" < ?', current_step.order).last
+    end
   end
 
-  # Check if this is the first step
+  # Check if step is first
   def first_step?(step)
     step.order == 1
   end
 
-  # Check if this is the last step
+  # Check if step is last
   def last_step?(step)
-    step == platform.steps_ordered.last
+    step == @platform.steps_ordered.last
   end
 
-  # Get progress percentage (0-100)
+  # Calculate progress percentage
   def progress_percentage(step)
-    return 0 if platform.steps_ordered.count == 0
-    ((step.order.to_f / platform.steps_ordered.count) * 100).round
+    return 0 if @platform.steps_ordered.count == 0
+    
+    total_steps = @platform.steps_ordered.count
+    current_position = step.order
+    ((current_position.to_f / total_steps) * 100).round
   end
 
   # Validate step data based on component type
   def validate_step_data(step, step_params)
     Rails.logger.info "=== VALIDATION DEBUG ==="
     Rails.logger.info "Step component type: #{step.component_type}"
-    Rails.logger.info "Step params: #{step_params.inspect}"
+    Rails.logger.info "Step params: #{step_params}"
     
-    case step.component_type
+    result = case step.component_type
     when 'amount_input'
-      result = validate_amount_input(step, step_params)
-      Rails.logger.info "Amount validation result: #{result}"
-      result
+      validate_amount_input(step, step_params)
     when 'checkbox'
-      result = validate_checkbox(step, step_params)
-      Rails.logger.info "Checkbox validation result: #{result}"
-      result
+      validate_checkbox(step, step_params)
     when 'text_input'
-      result = validate_text_input(step, step_params)
-      Rails.logger.info "Text input validation result: #{result}"
-      result
+      validate_text_input(step, step_params)
     when 'disclaimer'
-      result = validate_disclaimer(step, step_params)
-      Rails.logger.info "Disclaimer validation result: #{result}"
-      result
+      validate_disclaimer(step, step_params)
     else
-      Rails.logger.info "Unknown component type, defaulting to true"
-      true
+      false
     end
+    
+    Rails.logger.info "Validation PASSED" if result
+    Rails.logger.info "Validation FAILED" unless result
+    
+    # Track analytics in Redis
+    @redis_service.increment_step_completion(@platform.id, step.component_type) if result
+    
+    result
   end
 
-  # Get validation error message for a step
+  # Get validation error message
   def validation_error_message(step, step_params)
     case step.component_type
     when 'amount_input'
@@ -84,30 +116,57 @@ class InvestmentFlowService
     end
   end
 
-  # Save step data to investment
+  # Save step data to database and Redis
   def save_step_data(step, step_params)
-    investment.set_step_data(step.id, step_params)
-    investment.save!
+    # Save to database
+    @investment.set_step_data(step.id, step_params)
+    
+    # Cache in Redis for faster access
+    @redis_service.save_investment_session(
+      session_id, 
+      @investment.id, 
+      { step_id: step.id, data: step_params, timestamp: Time.current }
+    )
+    
+    # Track progress in Redis - mark as completed
+    @redis_service.track_step_progress(@investment.id, step.order, completed: true)
+    
+    # Invalidate step cache to ensure fresh data
+    Rails.cache.delete("platform:#{@platform.id}:all_steps")
   end
 
-  # Submit the investment (mark as submitted)
+  # Submit investment
   def submit_investment
-    investment.update!(status: :submitted)
+    @investment.update!(status: :submitted)
+    
+    # Clear Redis session data after submission
+    @redis_service.clear_investment_session(session_id, @investment.id)
   end
 
-  # Get all steps for the platform
+  # Get all steps with caching
   def all_steps
-    platform.steps_ordered
+    Rails.cache.fetch("platform:#{@platform.id}:all_steps", expires_in: 1.hour) do
+      @platform.steps_ordered.to_a
+    end
   end
 
-  # Get step by order
+  # Get step by order with caching
   def step_by_order(order)
-    platform.steps_ordered.find_by(order: order)
+    Rails.cache.fetch("platform:#{@platform.id}:step_by_order:#{order}", expires_in: 1.hour) do
+      @platform.steps_ordered.find_by(order: order)
+    end
   end
 
   # Check if step is completed (has data)
   def step_completed?(step)
-    step_data = investment.step_data(step.id)
+    # First check Redis for cached completion status
+    redis_progress = @redis_service.get_step_progress(@investment.id)
+    if redis_progress[step.order.to_s]
+      return true
+    end
+    
+    # Fallback to database check
+    step_data = @investment.step_data(step.id)
     case step.component_type
     when 'amount_input'
       step_data['value'].present?
@@ -124,25 +183,30 @@ class InvestmentFlowService
 
   # Get step data for a specific step
   def step_data(step)
-    investment.step_data(step.id)
+    @investment.step_data(step.id)
   end
 
   # Check if all previous steps are completed
   def previous_steps_completed?(current_step)
     return true if first_step?(current_step)
     
-    previous_steps = platform.steps_ordered.where('"order" < ?', current_step.order)
+    previous_steps = @platform.steps_ordered.where('"order" < ?', current_step.order)
     previous_steps.all? { |step| step_completed?(step) }
   end
 
   # Get the next incomplete step
   def next_incomplete_step
-    platform.steps_ordered.find { |step| !step_completed?(step) }
+    @platform.steps_ordered.find { |step| !step_completed?(step) }
   end
 
   # Get the first incomplete step
   def first_incomplete_step
-    platform.steps_ordered.find { |step| !step_completed?(step) } || platform.steps_ordered.first
+    @platform.steps_ordered.find { |step| !step_completed?(step) } || @platform.steps_ordered.first
+  end
+
+  # Get Redis session ID
+  def session_id
+    @session_id ||= "session_#{@investment.id}_#{Time.current.to_i}"
   end
 
   private
