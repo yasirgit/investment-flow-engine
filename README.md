@@ -1,6 +1,6 @@
 # 💼 Fintech Investment Flow Engine
 
-A configurable investment flow engine built with Rails 7 and Hotwire (Turbo + Stimulus). Each platform can define custom steps for users to complete before submitting an investment.
+A configurable investment flow engine built with Rails 8 and Hotwire (Turbo + Stimulus). Each platform can define custom steps for users to complete before submitting an investment.
 
 ## 🚀 Quick Start
 
@@ -10,7 +10,7 @@ A configurable investment flow engine built with Rails 7 and Hotwire (Turbo + St
 
 ## 🎯 Overview
 
-This implementation creates a configurable investment flow engine using Rails 7 with Hotwire (Turbo + Stimulus). Each platform can define custom steps for users to complete before submitting an investment.
+This implementation creates a configurable investment flow engine using Rails 8 with Hotwire (Turbo + Stimulus). Each platform can define custom steps for users to complete before submitting an investment.
 
 ## 🏗 Architecture
 
@@ -216,22 +216,6 @@ Platforms are configured via seeds with:
 - Client-side validation for UX only
 - **Service layer validation** for consistent rules
 
-## 🐛 Issues Resolved
-
-### Validation Issues
-- **Checkbox validation**: Fixed to handle "1", "on", "true" values
-- **Step completion**: Updated to check for "1" and "true" values
-- **Client-side validation**: Added vanilla JS fallbacks for reliability
-
-### Navigation Issues
-- **Progress bar**: Moved inside Turbo Frame for dynamic updates
-- **Step indicators**: Fixed completion status display
-- **Turbo Frame errors**: Fixed success page frame handling
-
-### UX Improvements
-- **Real-time feedback**: Immediate validation response
-- **Error handling**: Comprehensive validation messages
-- **Responsive design**: Works on all screen sizes
 
 ## 🎉 Success Metrics
 
@@ -249,7 +233,7 @@ The implementation successfully demonstrates:
 
 ## 🛠 Tech Stack
 
-- **Ruby on Rails 7-8**
+- **Ruby on Rails 8**
 - **Hotwire (Turbo Frames, Turbo Streams)**
 - **Stimulus.js**
 - **Tailwind CSS**
